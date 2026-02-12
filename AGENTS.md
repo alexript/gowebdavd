@@ -37,22 +37,24 @@ gowebdavd/
 ## Build Commands
 
 ```bash
-# Build for current platform
-go build -o gowebdavd ./cmd/gowebdavd
+# Recommended (Makefile)
+make build           # builds bin/gowebdavd
+make build-release   # builds bin/gowebdavd with -s -w
 
-# Build with optimizations (production)
-go build -ldflags="-s -w" -o gowebdavd ./cmd/gowebdavd
+# Alternative (plain go)
+go build -o bin/gowebdavd ./cmd/gowebdavd
+go build -ldflags="-s -w" -o bin/gowebdavd ./cmd/gowebdavd
 
-# Build for Windows
-go build -ldflags="-s -w" -o gowebdavd.exe ./cmd/gowebdavd
+# Windows
+go build -ldflags="-s -w" -o bin/gowebdavd.exe ./cmd/gowebdavd
 
 # Run the server directly (foreground)
 go run ./cmd/gowebdavd run -dir /path/to/folder -port 8080 -bind 127.0.0.1
 
 # Cross-compile examples
-GOOS=linux GOARCH=amd64 go build -o gowebdavd-linux ./cmd/gowebdavd
-GOOS=darwin GOARCH=amd64 go build -o gowebdavd-darwin ./cmd/gowebdavd
-GOOS=windows GOARCH=amd64 go build -o gowebdavd.exe ./cmd/gowebdavd
+GOOS=linux GOARCH=amd64 go build -o bin/gowebdavd-linux ./cmd/gowebdavd
+GOOS=darwin GOARCH=amd64 go build -o bin/gowebdavd-darwin ./cmd/gowebdavd
+GOOS=windows GOARCH=amd64 go build -o bin/gowebdavd.exe ./cmd/gowebdavd
 ```
 
 ## Usage Commands
@@ -74,19 +76,15 @@ GOOS=windows GOARCH=amd64 go build -o gowebdavd.exe ./cmd/gowebdavd
 ## Test Commands
 
 ```bash
-# Run all tests
+# Recommended (Makefile)
+make test            # go test ./...
+make cover           # coverage.out + summary
+
+# Alternatives (plain go)
 go test ./...
-
-# Run tests with coverage
 go test -cover ./...
-
-# Run tests for specific package
-go test ./internal/daemon/...
-
-# Run tests with verbose output
 go test -v ./...
-
-# Generate coverage report
+go test ./internal/daemon/...
 go test -coverprofile=coverage.out ./...
 go tool cover -func=coverage.out
 ```
@@ -102,6 +100,23 @@ go vet ./...
 
 # Tidy dependencies
 go mod tidy
+
+# Or via Makefile
+make fmt
+make vet
+make tidy
+```
+
+## Clean Commands
+
+```bash
+# Recommended (Makefile)
+make clean           # go clean; purge test cache; remove bin/ and coverage files
+
+# Alternatives (plain go)
+go clean             # removes build cache and object files
+go clean -testcache  # expires cached test results
+rm -rf bin coverage.out coverage.html coverage
 ```
 
 ## Package Overview

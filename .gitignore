@@ -52,3 +52,4 @@ __debug_bin
 # Build artifacts
 dist/
 build/
+bin/

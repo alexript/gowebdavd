@@ -26,13 +26,13 @@ Download the latest release for your platform from the [releases page](https://g
 git clone https://github.com/yourusername/gowebdavd.git
 cd gowebdavd
 
-# Build
-go build -o gowebdavd ./cmd/gowebdavd
+# Build (recommended via Makefile)
+make build   # produces bin/gowebdavd
 
 # Or build for specific platform
-GOOS=linux GOARCH=amd64 go build -o gowebdavd-linux ./cmd/gowebdavd
-GOOS=darwin GOARCH=amd64 go build -o gowebdavd-darwin ./cmd/gowebdavd
-GOOS=windows GOARCH=amd64 go build -o gowebdavd.exe ./cmd/gowebdavd
+GOOS=linux GOARCH=amd64 go build -o bin/gowebdavd-linux ./cmd/gowebdavd
+GOOS=darwin GOARCH=amd64 go build -o bin/gowebdavd-darwin ./cmd/gowebdavd
+GOOS=windows GOARCH=amd64 go build -o bin/gowebdavd.exe ./cmd/gowebdavd
 ```
 
 ## Usage
@@ -40,14 +40,14 @@ GOOS=windows GOARCH=amd64 go build -o gowebdavd.exe ./cmd/gowebdavd
 ### Quick Start
 
 ```bash
-# Start WebDAV server in background
-./gowebdavd start -dir /path/to/folder -port 8080
+# Start WebDAV server in background (from bin/)
+./bin/gowebdavd start -dir /path/to/folder -port 8080
 
 # Check if service is running
-./gowebdavd status
+./bin/gowebdavd status
 
 # Stop the service
-./gowebdavd stop
+./bin/gowebdavd stop
 ```
 
 ### Available Commands
@@ -72,25 +72,25 @@ All `start` and `run` commands support the following flags:
 #### Serve current directory
 
 ```bash
-./gowebdavd start
+./bin/gowebdavd start
 ```
 
 #### Serve specific directory on custom port
 
 ```bash
-./gowebdavd start -dir /home/user/documents -port 9090
+./bin/gowebdavd start -dir /home/user/documents -port 9090
 ```
 
 #### Bind to all interfaces (use with caution)
 
 ```bash
-./gowebdavd start -dir /srv/webdav -bind 0.0.0.0 -port 8080
+./bin/gowebdavd start -dir /srv/webdav -bind 0.0.0.0 -port 8080
 ```
 
 #### Run in foreground for debugging
 
 ```bash
-./gowebdavd run -dir /path/to/folder -port 8080
+./bin/gowebdavd run -dir /path/to/folder -port 8080
 ```
 
 ## Use in Scripts
@@ -117,13 +117,13 @@ curl -X PROPFIND http://127.0.0.1:8080/
 
 ```powershell
 # Start WebDAV server
-.\gowebdavd.exe start -dir C:\Data -port 8080
+.\bin\gowebdavd.exe start -dir C:\Data -port 8080
 Start-Sleep -Seconds 2
 
 # Use WebDAV...
 
 # Stop WebDAV server
-.\gowebdavd.exe stop
+.\bin\gowebdavd.exe stop
 ```
 
 ## Project Structure
@@ -150,20 +150,30 @@ gowebdavd/
 ### Build
 
 ```bash
-go build -o gowebdavd ./cmd/gowebdavd
+make build   # produces bin/gowebdavd
 ```
 
 ### Test
 
 ```bash
 # Run all tests
-go test ./...
+make test
 
 # Run tests with coverage
-go test -cover ./...
+make cover
 
 # Run tests with verbose output
 go test -v ./...
+
+### Clean Up
+
+To remove build and test artifacts, use the standard Go cleanup via Makefile:
+
+```bash
+make clean
+```
+
+This runs `go clean`, clears test cache, and removes `bin/` and coverage files.
 ```
 
 ### Project Layout
