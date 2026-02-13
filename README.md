@@ -160,6 +160,7 @@ make cover
 
 # Run tests with verbose output
 go test -v ./...
+```
 
 ### Clean Up
 
