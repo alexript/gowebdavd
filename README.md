@@ -15,15 +15,11 @@ A simple WebDAV server written in Go with daemon mode support for background ser
 
 ## Installation
 
-### Download Pre-built Binary
-
-Download the latest release for your platform from the [releases page](https://github.com/yourusername/gowebdavd/releases).
-
 ### Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/gowebdavd.git
+git clone https://github.com/alexript/gowebdavd.git
 cd gowebdavd
 
 # Build (recommended via Makefile)
