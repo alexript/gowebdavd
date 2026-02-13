@@ -170,7 +170,7 @@ make clean
 ```
 
 This runs `go clean`, clears test cache, and removes `bin/` and coverage files.
-```
+
 
 ### Project Layout
 
