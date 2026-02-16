@@ -23,8 +23,11 @@ A simple WebDAV server written in Go with daemon mode support for background ser
 git clone https://github.com/alexript/gowebdavd.git
 cd gowebdavd
 
-# Build (recommended via Makefile)
+# Build (Linux/macOS/WSL - via Makefile)
 make build   # produces bin/gowebdavd
+
+# Build (Windows native - via build.cmd)
+build.cmd build   # produces bin\gowebdavd.exe
 
 # Or build for specific platform
 GOOS=linux GOARCH=amd64 go build -o bin/gowebdavd-linux ./cmd/gowebdavd
@@ -175,6 +178,8 @@ gowebdavd/
 │   ├── pidfile/          # PID file operations
 │   ├── process/          # Process management
 │   └── server/           # WebDAV server
+├── Makefile              # Build automation (Linux/macOS/WSL)
+├── build.cmd             # Build automation (Windows native)
 ├── go.mod
 ├── go.sum
 └── README.md
@@ -188,29 +193,51 @@ gowebdavd/
 
 ### Build
 
+**Linux/macOS/WSL:**
 ```bash
 make build   # produces bin/gowebdavd
 ```
 
+**Windows (native CMD/PowerShell):**
+```cmd
+build.cmd build   # produces bin\gowebdavd.exe
+```
+
 ### Test
 
+**Linux/macOS/WSL:**
 ```bash
 # Run all tests
 make test
 
 # Run tests with coverage
 make cover
+```
 
+**Windows (native CMD/PowerShell):**
+```cmd
+build.cmd test
+build.cmd cover
+```
+
+**Direct go command (all platforms):**
+```bash
 # Run tests with verbose output
 go test -v ./...
 ```
 
 ### Clean Up
 
-To remove build and test artifacts, use the standard Go cleanup via Makefile:
+To remove build and test artifacts:
 
+**Linux/macOS/WSL:**
 ```bash
 make clean
+```
+
+**Windows (native CMD/PowerShell):**
+```cmd
+build.cmd clean
 ```
 
 This runs `go clean`, clears test cache, and removes `bin/` and coverage files.

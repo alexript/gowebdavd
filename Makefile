@@ -1,17 +1,32 @@
 BIN_DIR := bin
 BIN := $(BIN_DIR)/gowebdavd
+BIN_WIN := $(BIN_DIR)/gowebdavd.exe
+
+# Detect OS
+ifeq ($(OS),Windows_NT)
+    SHELL := cmd
+    MKDIR = if not exist $(subst /,\\,$(1)) mkdir $(subst /,\\,$(1))
+    RM = if exist $(subst /,\\,$(1)) rmdir /s /q $(subst /,\\,$(1))
+    RM_F = if exist $(subst /,\\,$(1)) del /f $(subst /,\\,$(1))
+    BIN_TARGET := $(BIN_WIN)
+else
+    MKDIR = mkdir -p $(1)
+    RM = rm -rf $(1)
+    RM_F = rm -f $(1)
+    BIN_TARGET := $(BIN)
+endif
 
 .PHONY: all build build-release test cover run clean tidy fmt vet
 
 all: build
 
 build:
-	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN) ./cmd/gowebdavd
+	@$(call MKDIR,$(BIN_DIR))
+	go build -o $(BIN_TARGET) ./cmd/gowebdavd
 
 build-release:
-	@mkdir -p $(BIN_DIR)
-	go build -ldflags="-s -w" -o $(BIN) ./cmd/gowebdavd
+	@$(call MKDIR,$(BIN_DIR))
+	go build -ldflags="-s -w" -o $(BIN_TARGET) ./cmd/gowebdavd
 
 test:
 	go test ./...
@@ -21,7 +36,7 @@ cover:
 	go tool cover -func=coverage.out
 
 run: build
-	$(BIN) run -dir . -port 8080 -bind 127.0.0.1
+	$(BIN_TARGET) run -dir . -port 8080 -bind 127.0.0.1
 
 fmt:
 	go fmt ./...
@@ -33,11 +48,11 @@ tidy:
 	go mod tidy
 
 clean:
-	# Clean Go build/test artifacts (project-local)
 	go clean
-	# Expire cached test results so next run re-executes tests
 	go clean -testcache
-	# Remove local build outputs and coverage files
-	rm -rf $(BIN_DIR) coverage.out coverage.html coverage
-	# Remove any previously built binaries placed at repo root
-	rm -f gowebdavd gowebdavd.exe gowebdavd-*
+	@$(call RM,$(BIN_DIR))
+	@$(call RM_F,coverage.out)
+	@$(call RM_F,coverage.html)
+	@$(call RM,coverage)
+	@$(call RM_F,gowebdavd)
+	@$(call RM_F,gowebdavd.exe)

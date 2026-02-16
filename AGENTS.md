@@ -39,8 +39,10 @@ gowebdavd/
 
 ## Build Commands
 
+### Linux/macOS/WSL (via Makefile)
+
 ```bash
-# Recommended (Makefile)
+# Recommended
 make build           # builds bin/gowebdavd
 make build-release   # builds bin/gowebdavd with -s -w
 
@@ -48,13 +50,21 @@ make build-release   # builds bin/gowebdavd with -s -w
 go build -o bin/gowebdavd ./cmd/gowebdavd
 go build -ldflags="-s -w" -o bin/gowebdavd ./cmd/gowebdavd
 
-# Windows
-go build -ldflags="-s -w" -o bin/gowebdavd.exe ./cmd/gowebdavd
-
 # Run the server directly (foreground)
 go run ./cmd/gowebdavd run -dir /path/to/folder -port 8080 -bind 127.0.0.1
+```
 
-# Cross-compile examples
+### Windows Native (via build.cmd)
+
+```cmd
+build.cmd build         # builds bin\gowebdavd.exe
+build.cmd build-release # builds bin\gowebdavd.exe with -s -w
+build.cmd run           # build and run in foreground
+```
+
+### Cross-compile Examples
+
+```bash
 GOOS=linux GOARCH=amd64 go build -o bin/gowebdavd-linux ./cmd/gowebdavd
 GOOS=darwin GOARCH=amd64 go build -o bin/gowebdavd-darwin ./cmd/gowebdavd
 GOOS=windows GOARCH=amd64 go build -o bin/gowebdavd.exe ./cmd/gowebdavd
@@ -84,12 +94,23 @@ GOOS=windows GOARCH=amd64 go build -o bin/gowebdavd.exe ./cmd/gowebdavd
 
 ## Test Commands
 
+### Linux/macOS/WSL (via Makefile)
+
 ```bash
-# Recommended (Makefile)
 make test            # go test ./...
 make cover           # coverage.out + summary
+```
 
-# Alternatives (plain go)
+### Windows Native (via build.cmd)
+
+```cmd
+build.cmd test       # go test ./...
+build.cmd cover      # coverage.out + summary
+```
+
+### Direct go Commands (all platforms)
+
+```bash
 go test ./...
 go test -cover ./...
 go test -v ./...
@@ -100,6 +121,8 @@ go tool cover -func=coverage.out
 
 ## Lint Commands
 
+### Direct go Commands (all platforms)
+
 ```bash
 # Format code
 go fmt ./...
@@ -109,23 +132,51 @@ go vet ./...
 
 # Tidy dependencies
 go mod tidy
+```
 
-# Or via Makefile
+### Via Makefile (Linux/macOS/WSL)
+
+```bash
 make fmt
 make vet
 make tidy
 ```
 
+### Via build.cmd (Windows native)
+
+```cmd
+build.cmd fmt
+build.cmd vet
+build.cmd tidy
+```
+
 ## Clean Commands
 
-```bash
-# Recommended (Makefile)
-make clean           # go clean; purge test cache; remove bin/ and coverage files
+### Linux/macOS/WSL (via Makefile)
 
-# Alternatives (plain go)
+```bash
+make clean           # go clean; purge test cache; remove bin/ and coverage files
+```
+
+### Windows Native (via build.cmd)
+
+```cmd
+build.cmd clean      # go clean; purge test cache; remove bin\ and coverage files
+```
+
+### Direct Commands (all platforms)
+
+```bash
+# Clean Go build/test artifacts
 go clean             # removes build cache and object files
 go clean -testcache  # expires cached test results
+
+# Remove build outputs (Linux/macOS)
 rm -rf bin coverage.out coverage.html coverage
+
+# Remove build outputs (Windows CMD)
+rmdir /s /q bin
+del /f coverage.out coverage.html
 ```
 
 ## Package Overview
