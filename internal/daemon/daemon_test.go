@@ -4,10 +4,33 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"gowebdavd/internal/process"
 )
+
+// createTestExecutable creates a platform-specific test executable
+func createTestExecutable(t *testing.T, dir string) string {
+	t.Helper()
+
+	if runtime.GOOS == "windows" {
+		execPath := filepath.Join(dir, "testexec.bat")
+		// Create a batch file that exits immediately
+		content := []byte("@echo off\nexit /b 0")
+		if err := os.WriteFile(execPath, content, 0755); err != nil {
+			t.Fatalf("Failed to create test executable: %v", err)
+		}
+		return execPath
+	}
+
+	execPath := filepath.Join(dir, "testexec")
+	content := []byte("#!/bin/sh\nexit 0")
+	if err := os.WriteFile(execPath, content, 0755); err != nil {
+		t.Fatalf("Failed to create test executable: %v", err)
+	}
+	return execPath
+}
 
 // MockPIDFile implements pidfile.File for testing
 type MockPIDFile struct {
@@ -147,13 +170,7 @@ func TestStopKillFallback(t *testing.T) {
 
 func TestStartNew(t *testing.T) {
 	tmpDir := t.TempDir()
-	execPath := filepath.Join(tmpDir, "testexec")
-
-	// Create a test executable that exits immediately
-	content := []byte("#!/bin/sh\nexit 0")
-	if err := os.WriteFile(execPath, content, 0755); err != nil {
-		t.Fatalf("Failed to create test executable: %v", err)
-	}
+	execPath := createTestExecutable(t, tmpDir)
 
 	pf := &MockPIDFile{ReadErr: os.ErrNotExist}
 	pm := &process.MockManager{}
@@ -186,12 +203,7 @@ func TestStartAlreadyRunning(t *testing.T) {
 
 func TestStartRemovesStalePID(t *testing.T) {
 	tmpDir := t.TempDir()
-	execPath := filepath.Join(tmpDir, "testexec")
-
-	content := []byte("#!/bin/sh\nexit 0")
-	if err := os.WriteFile(execPath, content, 0755); err != nil {
-		t.Fatalf("Failed to create test executable: %v", err)
-	}
+	execPath := createTestExecutable(t, tmpDir)
 
 	pf := &MockPIDFile{Pid: 1234, ReadErr: nil}
 	pm := &process.MockManager{
@@ -209,13 +221,7 @@ func TestStartRemovesStalePID(t *testing.T) {
 
 func TestStartWithLogging(t *testing.T) {
 	tmpDir := t.TempDir()
-	execPath := filepath.Join(tmpDir, "testexec")
-
-	// Create a test executable that exits immediately
-	content := []byte("#!/bin/sh\nexit 0")
-	if err := os.WriteFile(execPath, content, 0755); err != nil {
-		t.Fatalf("Failed to create test executable: %v", err)
-	}
+	execPath := createTestExecutable(t, tmpDir)
 
 	pf := &MockPIDFile{ReadErr: os.ErrNotExist}
 	pm := &process.MockManager{}
@@ -231,13 +237,7 @@ func TestStartWithLogging(t *testing.T) {
 func TestStartWithLoggingAndCustomDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	customLogDir := t.TempDir()
-	execPath := filepath.Join(tmpDir, "testexec")
-
-	// Create a test executable that exits immediately
-	content := []byte("#!/bin/sh\nexit 0")
-	if err := os.WriteFile(execPath, content, 0755); err != nil {
-		t.Fatalf("Failed to create test executable: %v", err)
-	}
+	execPath := createTestExecutable(t, tmpDir)
 
 	pf := &MockPIDFile{ReadErr: os.ErrNotExist}
 	pm := &process.MockManager{}

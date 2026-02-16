@@ -87,7 +87,9 @@ func (d *Daemon) Stop() error {
 	}
 
 	if err := d.procMgr.Terminate(pid); err != nil {
-		return fmt.Errorf("failed to stop service: %w", err)
+		if err := d.procMgr.Kill(pid); err != nil {
+			return fmt.Errorf("failed to stop service: %w", err)
+		}
 	}
 
 	d.pidFile.Remove()
