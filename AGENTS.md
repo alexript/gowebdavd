@@ -16,6 +16,9 @@ gowebdavd/
 │   │   ├── daemon_unix.go       # Unix-specific daemon implementation
 │   │   ├── daemon_windows.go    # Windows-specific daemon implementation
 │   │   └── daemon_test.go       # Daemon tests
+│   ├── logger/
+│   │   ├── logger.go            # HTTP request logging
+│   │   └── logger_test.go       # Logger tests
 │   ├── pidfile/
 │   │   ├── pidfile.go           # PID file interface and implementation
 │   │   └── pidfile_test.go      # PID file tests
@@ -71,6 +74,12 @@ GOOS=windows GOARCH=amd64 go build -o bin/gowebdavd.exe ./cmd/gowebdavd
 
 # Run server in foreground (for testing/debugging)
 ./gowebdavd run -dir /path/to/folder -port 8080 -bind 127.0.0.1
+
+# Start with HTTP request logging enabled
+./gowebdavd start -dir /path/to/folder -log
+
+# Start with custom log directory (directory must exist)
+./gowebdavd start -dir /path/to/folder -log -log-dir /var/log/gowebdavd
 ```
 
 ## Test Commands
@@ -126,6 +135,9 @@ Main application entry point. Contains CLI argument parsing and command dispatch
 
 ### internal/daemon
 Daemon management functionality for starting, stopping, and checking service status. Platform-specific implementations for Unix and Windows.
+
+### internal/logger
+HTTP request logging with automatic log rotation. Log files are stored in platform-specific directories and automatically cleaned up after 1 month.
 
 ### internal/pidfile
 PID file management interface and implementation. Handles reading, writing, and removing PID files.

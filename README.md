@@ -9,6 +9,7 @@ A simple WebDAV server written in Go with daemon mode support for background ser
 - 🚀 **Easy to use** - Simple CLI with intuitive commands
 - 🔧 **Daemon mode** - Run as a background service
 - 🖥️ **Cross-platform** - Works on Linux, macOS, and Windows
+- 📝 **HTTP request logging** - Optional logging to files with automatic cleanup
 - 📁 **Serve any directory** - Point to any folder on your system
 - 🔒 **Secure by default** - Binds to localhost only
 - 🧪 **Well tested** - Comprehensive test coverage
@@ -62,6 +63,8 @@ All `start` and `run` commands support the following flags:
 - `-dir` - Directory to serve (default: current directory)
 - `-port` - Port to listen on (default: 8080)
 - `-bind` - IP address to bind to (default: 127.0.0.1)
+- `-log` - Enable HTTP request logging (default: false)
+- `-log-dir` - Custom log directory (requires `-log`, must exist)
 
 ### Examples
 
@@ -122,6 +125,45 @@ Start-Sleep -Seconds 2
 .\bin\gowebdavd.exe stop
 ```
 
+## Logging
+
+The WebDAV server supports optional HTTP request logging. When enabled, all HTTP requests are logged to timestamped log files.
+
+### Default Behavior
+
+- Logs are stored in:
+  - **Linux/macOS**: `~/.local/share/gowebdavd/logs/`
+  - **Windows**: `%LOCALAPPDATA%\gowebdavd\logs\`
+- Log files are named: `gowebdavd_YYYY-MM-DD_HH-MM-SS.log`
+- Log files older than 1 month are automatically cleaned up
+- Each log entry includes: client IP, HTTP method, URL path, status code, duration, and user agent
+
+### Enable Logging
+
+```bash
+# Start with logging enabled
+./bin/gowebdavd start -dir /path/to/folder -log
+```
+
+### Custom Log Directory
+
+You can specify a custom log directory (the directory must already exist):
+
+```bash
+# Use custom log directory
+./bin/gowebdavd start -dir /data -log -log-dir /var/log/gowebdavd
+```
+
+### Log Format
+
+Each log entry follows this format:
+
+```
+2026/02/16 10:30:45 127.0.0.1:54321 PROPFIND /documents 207 2.345ms curl/7.68.0
+```
+
+Format: `timestamp client_ip method path status_code duration user_agent`
+
 ## Project Structure
 
 ```
@@ -129,6 +171,7 @@ gowebdavd/
 ├── cmd/gowebdavd/        # Application entry point
 ├── internal/
 │   ├── daemon/           # Daemon management
+│   ├── logger/           # HTTP request logging
 │   ├── pidfile/          # PID file operations
 │   ├── process/          # Process management
 │   └── server/           # WebDAV server
@@ -180,6 +223,7 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 - `cmd/gowebdavd/` - Main application entry point
 - `internal/` - Private application code
   - `daemon/` - Background service management
+  - `logger/` - HTTP request logging with file rotation
   - `pidfile/` - PID file handling
   - `process/` - Process management with mocks for testing
   - `server/` - WebDAV HTTP server
