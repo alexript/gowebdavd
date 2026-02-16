@@ -10,24 +10,32 @@ import (
 	"strconv"
 
 	"golang.org/x/net/webdav"
+	"gowebdavd/internal/logger"
 )
 
 // WebDAV wraps the WebDAV HTTP server
 type WebDAV struct {
 	handler http.Handler
 	addr    string
+	logger  *logger.Logger
 }
 
 // New creates a new WebDAV server instance
-func New(folder string, port int, bind string) *WebDAV {
-	handler := &webdav.Handler{
+func New(folder string, port int, bind string, log *logger.Logger) *WebDAV {
+	davHandler := &webdav.Handler{
 		FileSystem: webdav.Dir(folder),
 		LockSystem: webdav.NewMemLS(),
+	}
+
+	var handler http.Handler = davHandler
+	if log != nil && log.Enabled() {
+		handler = log.Middleware(davHandler)
 	}
 
 	return &WebDAV{
 		handler: handler,
 		addr:    bind + ":" + strconv.Itoa(port),
+		logger:  log,
 	}
 }
 

@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"golang.org/x/net/webdav"
+	"gowebdavd/internal/logger"
 )
 
 func TestNew(t *testing.T) {
 	tmpDir := t.TempDir()
-	srv := New(tmpDir, 18080, "127.0.0.1")
+	srv := New(tmpDir, 18080, "127.0.0.1", nil)
 
 	if srv == nil {
 		t.Fatal("New() returned nil")
@@ -69,7 +70,7 @@ func TestWebDAVAddr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			srv := New(tmpDir, tt.port, tt.bind)
+			srv := New(tmpDir, tt.port, tt.bind, nil)
 			if srv.Addr() != tt.expected {
 				t.Errorf("Addr() = %s, want %s", srv.Addr(), tt.expected)
 			}
@@ -79,7 +80,7 @@ func TestWebDAVAddr(t *testing.T) {
 
 func TestWebDAVHandler(t *testing.T) {
 	tmpDir := t.TempDir()
-	srv := New(tmpDir, 18080, "127.0.0.1")
+	srv := New(tmpDir, 18080, "127.0.0.1", nil)
 
 	handler := srv.Handler()
 	if handler == nil {
@@ -97,7 +98,7 @@ func TestWebDAVHandler(t *testing.T) {
 
 func TestWebDAVHandlerCapabilities(t *testing.T) {
 	tmpDir := t.TempDir()
-	srv := New(tmpDir, 18080, "127.0.0.1")
+	srv := New(tmpDir, 18080, "127.0.0.1", nil)
 	handler := srv.Handler().(*webdav.Handler)
 
 	// Test that the handler can be used with http.Handler interface
@@ -113,5 +114,39 @@ func TestWebDAVHandlerCapabilities(t *testing.T) {
 	_, ok := fs.(webdav.Dir)
 	if !ok {
 		t.Error("FileSystem should be webdav.Dir")
+	}
+}
+
+func TestNew_WithLogger(t *testing.T) {
+	tmpDir := t.TempDir()
+	log := logger.NewNopLogger()
+	srv := New(tmpDir, 18080, "127.0.0.1", log)
+
+	if srv == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// When logger is provided and enabled, handler should be wrapped
+	if srv.Handler() == nil {
+		t.Error("Handler() returned nil")
+	}
+}
+
+func TestNew_WithDisabledLogger(t *testing.T) {
+	tmpDir := t.TempDir()
+	srv := New(tmpDir, 18080, "127.0.0.1", nil)
+
+	if srv == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Verify handler is still webdav.Handler when logger is nil
+	handler, ok := srv.Handler().(*webdav.Handler)
+	if !ok {
+		t.Error("Handler() should return *webdav.Handler when logger is nil")
+	}
+
+	if handler.FileSystem == nil {
+		t.Error("Handler.FileSystem is nil")
 	}
 }

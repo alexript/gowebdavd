@@ -33,7 +33,7 @@ func New(pf pidfile.File, pm process.Manager, execPath string) *Daemon {
 }
 
 // Start starts the WebDAV service in background
-func (d *Daemon) Start(folder string, port int, bind string) error {
+func (d *Daemon) Start(folder string, port int, bind string, enableLog bool, logDir string) error {
 	pid, err := d.pidFile.Read()
 	if err == nil && d.procMgr.IsRunning(pid) {
 		fmt.Printf("Service is already running (PID: %d)\n", pid)
@@ -44,7 +44,15 @@ func (d *Daemon) Start(folder string, port int, bind string) error {
 		d.pidFile.Remove()
 	}
 
-	cmd := exec.Command(d.execPath, "run", "-dir", folder, "-port", strconv.Itoa(port), "-bind", bind)
+	args := []string{"run", "-dir", folder, "-port", strconv.Itoa(port), "-bind", bind}
+	if enableLog {
+		args = append(args, "-log")
+		if logDir != "" {
+			args = append(args, "-log-dir", logDir)
+		}
+	}
+
+	cmd := exec.Command(d.execPath, args...)
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{

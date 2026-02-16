@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"gowebdavd/internal/daemon"
+	"gowebdavd/internal/logger"
 	"gowebdavd/internal/pidfile"
 	"gowebdavd/internal/process"
 	"gowebdavd/internal/server"
@@ -52,6 +53,8 @@ func printUsage() {
 	fmt.Println("  -dir string    Directory to serve (default \".\")")
 	fmt.Println("  -port int      Port to listen on (default 8080)")
 	fmt.Println("  -bind string   IP address to bind to (default \"127.0.0.1\")")
+	fmt.Println("  -log           Enable HTTP request logging (default: false)")
+	fmt.Println("  -log-dir       Custom log directory (requires -log, must exist)")
 }
 
 func handleStartOrRun(command string) {
@@ -59,6 +62,8 @@ func handleStartOrRun(command string) {
 	folder := startCmd.String("dir", ".", "Directory")
 	port := startCmd.Int("port", 8080, "Port")
 	bind := startCmd.String("bind", "127.0.0.1", "IP")
+	enableLog := startCmd.Bool("log", false, "Enable HTTP request logging")
+	logDir := startCmd.String("log-dir", "", "Custom log directory (requires -log)")
 	startCmd.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*folder); os.IsNotExist(err) {
@@ -68,12 +73,22 @@ func handleStartOrRun(command string) {
 
 	if command == "start" {
 		d := daemon.New(pidfile.New(), process.NewManager(), os.Args[0])
-		if err := d.Start(*folder, *port, *bind); err != nil {
+		if err := d.Start(*folder, *port, *bind, *enableLog, *logDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
-		srv := server.New(*folder, *port, *bind)
+		var log *logger.Logger
+		var err error
+		if *enableLog {
+			log, err = logger.New(true, *logDir)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+				os.Exit(1)
+			}
+			defer log.Close()
+		}
+		srv := server.New(*folder, *port, *bind, log)
 		if err := srv.Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
 			os.Exit(1)
