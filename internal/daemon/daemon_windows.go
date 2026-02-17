@@ -34,7 +34,7 @@ func New(pf pidfile.File, pm process.Manager, execPath string) *Daemon {
 }
 
 // Start starts the WebDAV service in background
-func (d *Daemon) Start(folder string, port int, bind string, enableLog bool, logDir string) error {
+func (d *Daemon) Start(folder string, port int, bind string, enableLog bool, logDir string, noLock bool) error {
 	// Acquire exclusive lock for atomic check-and-write
 	if err := d.pidFile.Lock(); err != nil {
 		return fmt.Errorf("failed to lock PID file: %w", err)

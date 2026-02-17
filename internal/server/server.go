@@ -20,6 +20,28 @@ import (
 	"golang.org/x/net/webdav"
 )
 
+// noOpLS is a no-op implementation of webdav.LockSystem that allows all operations
+// without requiring lock tokens. This is useful for clients like davfs2 that have
+// issues with WebDAV locking semantics.
+type noOpLS struct{}
+
+func (n *noOpLS) Confirm(now time.Time, name0, name1 string, conditions ...webdav.Condition) (func(), error) {
+	return func() {}, nil
+}
+
+func (n *noOpLS) Create(now time.Time, details webdav.LockDetails) (string, error) {
+	// Return a dummy token
+	return fmt.Sprintf("opaquelocktoken:%d", now.UnixNano()), nil
+}
+
+func (n *noOpLS) Refresh(now time.Time, token string, duration time.Duration) (webdav.LockDetails, error) {
+	return webdav.LockDetails{}, nil
+}
+
+func (n *noOpLS) Unlock(now time.Time, token string) error {
+	return nil
+}
+
 // Logger interface for HTTP request logging
 type Logger interface {
 	Middleware(http.Handler) http.Handler
@@ -57,9 +79,22 @@ func (t *traversalProtection) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // New creates a new WebDAV server instance
 func New(folder string, port int, bind string, log Logger) *WebDAV {
+	return NewWithLockSystem(folder, port, bind, log, false)
+}
+
+// NewWithLockSystem creates a new WebDAV server instance with specified lock system type
+// If noLock is true, uses a no-op lock system that doesn't require tokens (for davfs2 compatibility)
+func NewWithLockSystem(folder string, port int, bind string, log Logger, noLock bool) *WebDAV {
+	var ls webdav.LockSystem
+	if noLock {
+		ls = &noOpLS{}
+	} else {
+		ls = webdav.NewMemLS()
+	}
+
 	davHandler := &webdav.Handler{
 		FileSystem: webdav.Dir(folder),
-		LockSystem: webdav.NewMemLS(),
+		LockSystem: ls,
 	}
 
 	var webdavHandler http.Handler = davHandler

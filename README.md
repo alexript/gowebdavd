@@ -68,6 +68,7 @@ All `start` and `run` commands support the following flags:
 - `-bind` - IP address to bind to (default: 127.0.0.1)
 - `-log` - Enable HTTP request logging (default: false)
 - `-log-dir` - Custom log directory (requires `-log`, must exist)
+- `-no-lock` - Disable WebDAV locking (for davfs2 compatibility)
 
 ### Examples
 
@@ -156,6 +157,19 @@ You can specify a custom log directory (the directory must already exist):
 # Use custom log directory
 ./bin/gowebdavd start -dir /data -log -log-dir /var/log/gowebdavd
 ```
+
+### davfs2 Compatibility
+
+Some WebDAV clients like davfs2 may have issues with the standard WebDAV locking mechanism. The `-no-lock` flag disables WebDAV locking, which can resolve issues with git operations on davfs2 mounts:
+
+```bash
+# Start with locking disabled for davfs2 compatibility
+./bin/gowebdavd start -dir /data -no-lock
+```
+
+**Use case**: When using gowebdavd with davfs2 mounts and git, you may encounter "Input/output error" during `git init`. This is caused by the WebDAV MOVE operation requiring lock tokens for both source and destination paths. The `-no-lock` flag resolves this by accepting all lock tokens without validation.
+
+**Note**: Disabling locks reduces WebDAV protocol compliance but improves compatibility with certain clients.
 
 ### Log Format
 

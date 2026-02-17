@@ -183,7 +183,7 @@ func TestStartNew(t *testing.T) {
 
 	// This will fail because our test script is not a valid Go binary
 	// but we can at least verify the logic before exec.Command
-	err := d.Start(tmpDir, 18080, "127.0.0.1", false, "")
+	err := d.Start(tmpDir, 18080, "127.0.0.1", false, "", false)
 	// We expect an error because the test script isn't a valid server
 	// but the PID file operations should be attempted
 	_ = err
@@ -196,7 +196,7 @@ func TestStartAlreadyRunning(t *testing.T) {
 	}
 	d := New(pf, pm, "/bin/test")
 
-	err := d.Start("/tmp", 8080, "127.0.0.1", false, "")
+	err := d.Start("/tmp", 8080, "127.0.0.1", false, "", false)
 	if err != nil {
 		t.Errorf("Start() error = %v", err)
 	}
@@ -216,7 +216,7 @@ func TestStartRemovesStalePID(t *testing.T) {
 	}
 	d := New(pf, pm, execPath)
 
-	err := d.Start(tmpDir, 18080, "127.0.0.1", false, "")
+	err := d.Start(tmpDir, 18080, "127.0.0.1", false, "", false)
 	_ = err
 
 	if !pf.Removed {
@@ -233,7 +233,7 @@ func TestStartWithLogging(t *testing.T) {
 	d := New(pf, pm, execPath)
 
 	// Test starting with logging enabled
-	err := d.Start(tmpDir, 18080, "127.0.0.1", true, "")
+	err := d.Start(tmpDir, 18080, "127.0.0.1", true, "", false)
 	// We expect an error because the test script isn't a valid server
 	// but we can at least verify the logic before exec.Command
 	_ = err
@@ -249,7 +249,7 @@ func TestStartWithLoggingAndCustomDir(t *testing.T) {
 	d := New(pf, pm, execPath)
 
 	// Test starting with logging enabled and custom log directory
-	err := d.Start(tmpDir, 18080, "127.0.0.1", true, customLogDir)
+	err := d.Start(tmpDir, 18080, "127.0.0.1", true, customLogDir, false)
 	// We expect an error because the test script isn't a valid server
 	// but we can at least verify the logic before exec.Command
 	_ = err

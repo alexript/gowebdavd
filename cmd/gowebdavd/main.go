@@ -51,11 +51,12 @@ func printUsage() {
 	fmt.Println("  run     - Run WebDAV server in foreground")
 	fmt.Println("")
 	fmt.Println("Options for start/run:")
-	fmt.Println("  -dir string    Directory to serve (default \".\")")
-	fmt.Println("  -port int      Port to listen on (default 8080)")
-	fmt.Println("  -bind string   IP address to bind to (default \"127.0.0.1\")")
-	fmt.Println("  -log           Enable HTTP request logging (default: false)")
-	fmt.Println("  -log-dir       Custom log directory (requires -log, must exist)")
+	fmt.Println("  -dir string      Directory to serve (default \".\")")
+	fmt.Println("  -port int        Port to listen on (default 8080)")
+	fmt.Println("  -bind string     IP address to bind to (default \"127.0.0.1\")")
+	fmt.Println("  -log             Enable HTTP request logging (default: false)")
+	fmt.Println("  -log-dir         Custom log directory (requires -log, must exist)")
+	fmt.Println("  -no-lock         Disable WebDAV locking (for davfs2 compatibility)")
 }
 
 func validatePort(port int) error {
@@ -75,6 +76,7 @@ func handleStartOrRun(command string) {
 	bind := startCmd.String("bind", "127.0.0.1", "IP")
 	enableLog := startCmd.Bool("log", false, "Enable HTTP request logging")
 	logDir := startCmd.String("log-dir", "", "Custom log directory (requires -log)")
+	noLock := startCmd.Bool("no-lock", false, "Disable WebDAV locking (for davfs2 compatibility)")
 	startCmd.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*folder); os.IsNotExist(err) {
@@ -89,7 +91,7 @@ func handleStartOrRun(command string) {
 
 	if command == "start" {
 		d := daemon.New(pidfile.New(), process.NewManager(), os.Args[0])
-		if err := d.Start(*folder, *port, *bind, *enableLog, *logDir); err != nil {
+		if err := d.Start(*folder, *port, *bind, *enableLog, *logDir, *noLock); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -104,7 +106,12 @@ func handleStartOrRun(command string) {
 			}
 			defer log.Close()
 		}
-		srv := server.New(*folder, *port, *bind, log)
+		var srv *server.WebDAV
+		if *noLock {
+			srv = server.NewWithLockSystem(*folder, *port, *bind, log, true)
+		} else {
+			srv = server.New(*folder, *port, *bind, log)
+		}
 		if err := srv.Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
 			os.Exit(1)
