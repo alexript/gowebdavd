@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
+	"time"
 
 	"gowebdavd/internal/pidfile"
 	"gowebdavd/internal/process"
@@ -34,12 +35,20 @@ func New(pf pidfile.File, pm process.Manager, execPath string) *Daemon {
 
 // Start starts the WebDAV service in background
 func (d *Daemon) Start(folder string, port int, bind string, enableLog bool, logDir string) error {
+	// Acquire exclusive lock for atomic check-and-write
+	if err := d.pidFile.Lock(); err != nil {
+		return fmt.Errorf("failed to lock PID file: %w", err)
+	}
+	defer d.pidFile.Unlock()
+
+	// Check if service already running
 	pid, err := d.pidFile.Read()
 	if err == nil && d.procMgr.IsRunning(pid) {
 		fmt.Printf("Service is already running (PID: %d)\n", pid)
 		return nil
 	}
 
+	// Remove stale PID file
 	if err == nil {
 		d.pidFile.Remove()
 	}
@@ -61,6 +70,13 @@ func (d *Daemon) Start(folder string, port int, bind string, enableLog bool, log
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start service: %w", err)
+	}
+
+	// Wait for service to become ready
+	healthURL := fmt.Sprintf("http://%s:%d/health", bind, port)
+	if err := waitForService(healthURL, 10*time.Second); err != nil {
+		cmd.Process.Kill()
+		return fmt.Errorf("service failed to start: %w", err)
 	}
 
 	if err := d.pidFile.Write(cmd.Process.Pid); err != nil {

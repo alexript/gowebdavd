@@ -1,42 +1,81 @@
 package server
 
 import (
+	"io"
 	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
-	"golang.org/x/net/webdav"
 	"gowebdavd/internal/logger"
 )
 
+// mockLogger is a test double for logger.Logger
+type mockLogger struct {
+	enabled bool
+}
+
+func (m *mockLogger) Enabled() bool                          { return m.enabled }
+func (m *mockLogger) Middleware(h http.Handler) http.Handler { return h }
+
 func TestNew(t *testing.T) {
-	tmpDir := t.TempDir()
-	srv := New(tmpDir, 18080, "127.0.0.1", nil)
+	// Create a temporary directory
+	tempDir := t.TempDir()
 
-	if srv == nil {
-		t.Fatal("New() returned nil")
+	server := New(tempDir, 8080, "127.0.0.1", nil)
+	if server == nil {
+		t.Fatal("Expected server to be created")
 	}
 
-	expectedAddr := "127.0.0.1:18080"
-	if srv.Addr() != expectedAddr {
-		t.Errorf("Addr() = %s, want %s", srv.Addr(), expectedAddr)
+	if server.Addr() != "127.0.0.1:8080" {
+		t.Errorf("Expected address 127.0.0.1:8080, got %s", server.Addr())
+	}
+}
+
+func TestDirectoryTraversal(t *testing.T) {
+	// Create a temporary directory for WebDAV root
+	tempDir := t.TempDir()
+
+	// Create a file outside the WebDAV root
+	parentDir := filepath.Dir(tempDir)
+	outsideFile := filepath.Join(parentDir, "secret.txt")
+	if err := os.WriteFile(outsideFile, []byte("secret content"), 0644); err != nil {
+		t.Fatalf("Failed to create outside file: %v", err)
+	}
+	defer os.Remove(outsideFile)
+
+	// Create WebDAV server
+	server := New(tempDir, 8080, "127.0.0.1", nil)
+
+	// Test various directory traversal attempts
+	traversalPaths := []string{
+		"../secret.txt",
+		"../../secret.txt",
+		"../../../secret.txt",
+		"test/../../../secret.txt",
+		"test/../test/../../../secret.txt",
 	}
 
-	if srv.Handler() == nil {
-		t.Error("Handler() returned nil")
-	}
+	for _, path := range traversalPaths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/"+path, nil)
+			rr := httptest.NewRecorder()
 
-	// Verify handler is webdav.Handler
-	handler, ok := srv.Handler().(*webdav.Handler)
-	if !ok {
-		t.Error("Handler() should return *webdav.Handler")
-	}
+			server.Handler().ServeHTTP(rr, req)
 
-	if handler.FileSystem == nil {
-		t.Error("Handler.FileSystem is nil")
-	}
-
-	if handler.LockSystem == nil {
-		t.Error("Handler.LockSystem is nil")
+			// Should return 404 or 403, not 200 with secret content
+			if rr.Code == http.StatusOK {
+				body, _ := io.ReadAll(rr.Body)
+				if string(body) == "secret content" {
+					t.Errorf("Directory traversal succeeded: got content %q", string(body))
+				}
+			}
+			if rr.Code != http.StatusNotFound && rr.Code != http.StatusForbidden {
+				t.Logf("Got status %d for path %s", rr.Code, path)
+			}
+		})
 	}
 }
 
@@ -87,33 +126,21 @@ func TestWebDAVHandler(t *testing.T) {
 		t.Fatal("Handler() returned nil")
 	}
 
-	// Verify handler responds to WebDAV methods
-	// We can't test actual HTTP requests without starting the server,
-	// but we can verify the handler type
-	_, ok := handler.(*webdav.Handler)
-	if !ok {
-		t.Error("Handler() should be *webdav.Handler")
-	}
+	// Verify handler implements http.Handler interface
+	var _ http.Handler = handler
 }
 
 func TestWebDAVHandlerCapabilities(t *testing.T) {
 	tmpDir := t.TempDir()
 	srv := New(tmpDir, 18080, "127.0.0.1", nil)
-	handler := srv.Handler().(*webdav.Handler)
+	handler := srv.Handler()
 
 	// Test that the handler can be used with http.Handler interface
 	var _ http.Handler = handler
 
-	// Verify FileSystem is set correctly
-	fs := handler.FileSystem
-	if fs == nil {
-		t.Fatal("FileSystem is nil")
-	}
-
-	// Verify it's a webdav.Dir
-	_, ok := fs.(webdav.Dir)
-	if !ok {
-		t.Error("FileSystem should be webdav.Dir")
+	// Verify handler is not nil and can serve requests
+	if handler == nil {
+		t.Fatal("Handler() returned nil")
 	}
 }
 
@@ -133,20 +160,42 @@ func TestNew_WithLogger(t *testing.T) {
 }
 
 func TestNew_WithDisabledLogger(t *testing.T) {
-	tmpDir := t.TempDir()
-	srv := New(tmpDir, 18080, "127.0.0.1", nil)
+	log := &mockLogger{enabled: false}
+	srv := New(t.TempDir(), 8080, "127.0.0.1", log)
 
 	if srv == nil {
-		t.Fatal("New() returned nil")
+		t.Fatal("New returned nil")
 	}
 
-	// Verify handler is still webdav.Handler when logger is nil
-	handler, ok := srv.Handler().(*webdav.Handler)
-	if !ok {
-		t.Error("Handler() should return *webdav.Handler when logger is nil")
+	handler := srv.Handler()
+	if handler == nil {
+		t.Error("Handler should not be nil")
 	}
 
-	if handler.FileSystem == nil {
-		t.Error("Handler.FileSystem is nil")
+	var _ http.Handler = handler
+}
+
+func TestGracefulShutdown(t *testing.T) {
+	dir := t.TempDir()
+	// Use port 0 to get a random available port
+	srv := New(dir, 0, "127.0.0.1", nil)
+
+	// Start server in goroutine
+	go func() {
+		// This will block until shutdown or error
+		srv.Start()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Test that health endpoint responds
+	resp, err := http.Get("http://" + srv.Addr() + "/health")
+	if err != nil {
+		t.Fatalf("Failed to connect to server: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"gowebdavd/internal/daemon"
 	"gowebdavd/internal/logger"
@@ -57,6 +58,16 @@ func printUsage() {
 	fmt.Println("  -log-dir       Custom log directory (requires -log, must exist)")
 }
 
+func validatePort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", port)
+	}
+	if port < 1024 && runtime.GOOS != "windows" {
+		fmt.Fprintf(os.Stderr, "Warning: port %d requires root/admin privileges on %s\n", port, runtime.GOOS)
+	}
+	return nil
+}
+
 func handleStartOrRun(command string) {
 	startCmd := flag.NewFlagSet("start", flag.ExitOnError)
 	folder := startCmd.String("dir", ".", "Directory")
@@ -68,6 +79,11 @@ func handleStartOrRun(command string) {
 
 	if _, err := os.Stat(*folder); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Directory does not exist: %s\n", *folder)
+		os.Exit(1)
+	}
+
+	if err := validatePort(*port); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 

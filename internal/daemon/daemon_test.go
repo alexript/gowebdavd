@@ -65,10 +65,15 @@ func (m *MockPIDFile) Remove() error {
 }
 
 func (m *MockPIDFile) Path() string {
-	if m.PathValue != "" {
-		return m.PathValue
-	}
-	return "/tmp/test.pid"
+	return m.PathValue
+}
+
+func (m *MockPIDFile) Lock() error {
+	return nil
+}
+
+func (m *MockPIDFile) Unlock() error {
+	return nil
 }
 
 func TestStatusNotRunning(t *testing.T) {

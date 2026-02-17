@@ -11,27 +11,36 @@ import (
 	"strconv"
 )
 
-// File defines the interface for PID file operations
+// File defines the interface for PID file operations.
+// It supports atomic locking to prevent race conditions during
+// concurrent access.
 type File interface {
 	Read() (int, error)
 	Write(pid int) error
 	Remove() error
 	Path() string
+	Lock() error
+	Unlock() error
 }
 
 // file implements File interface
 type file struct {
 	path string
+	fd   int // file descriptor for locking (-1 if not locked)
 }
 
-// New creates a new File instance with default path
+// New creates a new File instance with the default path.
+// The default path is $TMPDIR/gowebdavd.pid or /tmp/gowebdavd.pid if TMPDIR is not set.
+// The returned File is not locked; callers must call Lock() before operations.
 func New() File {
 	return &file{
 		path: filepath.Join(os.TempDir(), "gowebdavd.pid"),
 	}
 }
 
-// NewWithPath creates a new File instance with custom path
+// NewWithPath creates a new File instance with a custom path.
+// This is useful for specifying a system-wide PID location like /var/run.
+// The returned File is not locked; callers must call Lock() before operations.
 func NewWithPath(path string) File {
 	return &file{path: path}
 }

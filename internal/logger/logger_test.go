@@ -33,24 +33,12 @@ func TestNew_EnabledDefaultDir(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Override getLogDir to use temp directory
-	originalHome := os.Getenv("HOME")
-	originalUserProfile := os.Getenv("USERPROFILE")
-
 	if runtime.GOOS == "windows" {
-		os.Setenv("USERPROFILE", tempDir)
-		os.Setenv("LOCALAPPDATA", filepath.Join(tempDir, "AppData", "Local"))
+		t.Setenv("USERPROFILE", tempDir)
+		t.Setenv("LOCALAPPDATA", filepath.Join(tempDir, "AppData", "Local"))
 	} else {
-		os.Setenv("HOME", tempDir)
+		t.Setenv("HOME", tempDir)
 	}
-
-	defer func() {
-		if runtime.GOOS == "windows" {
-			os.Setenv("USERPROFILE", originalUserProfile)
-			os.Unsetenv("LOCALAPPDATA")
-		} else {
-			os.Setenv("HOME", originalHome)
-		}
-	}()
 
 	logger, err := New(true, "")
 	if err != nil {
@@ -260,23 +248,9 @@ func TestCleanupOldLogs_NonExistentDir(t *testing.T) {
 func TestGetLogDir(t *testing.T) {
 	tempDir := t.TempDir()
 
-	originalHome := os.Getenv("HOME")
-	originalUserProfile := os.Getenv("USERPROFILE")
-	originalLocalAppData := os.Getenv("LOCALAPPDATA")
-
-	defer func() {
-		os.Setenv("HOME", originalHome)
-		os.Setenv("USERPROFILE", originalUserProfile)
-		if originalLocalAppData != "" {
-			os.Setenv("LOCALAPPDATA", originalLocalAppData)
-		} else {
-			os.Unsetenv("LOCALAPPDATA")
-		}
-	}()
-
 	if runtime.GOOS == "windows" {
-		os.Setenv("USERPROFILE", tempDir)
-		os.Setenv("LOCALAPPDATA", filepath.Join(tempDir, "AppData", "Local"))
+		t.Setenv("USERPROFILE", tempDir)
+		t.Setenv("LOCALAPPDATA", filepath.Join(tempDir, "AppData", "Local"))
 
 		logDir, err := getLogDir()
 		if err != nil {
@@ -288,7 +262,7 @@ func TestGetLogDir(t *testing.T) {
 			t.Errorf("Expected %s, got %s", expected, logDir)
 		}
 	} else {
-		os.Setenv("HOME", tempDir)
+		t.Setenv("HOME", tempDir)
 
 		logDir, err := getLogDir()
 		if err != nil {

@@ -1,7 +1,8 @@
 // Copyright (c) 2026 gowebdavd contributors
 // SPDX-License-Identifier: MIT
 
-// Package logger provides HTTP request logging functionality.
+// Package logger provides HTTP request logging functionality for the WebDAV server.
+// It supports automatic log file creation, rotation, and cleanup of old logs.
 package logger
 
 import (
@@ -16,7 +17,9 @@ import (
 	"time"
 )
 
-// Logger handles HTTP request logging
+// Logger handles HTTP request logging with automatic log rotation.
+// When enabled, it writes all HTTP requests to timestamped log files
+// and automatically cleans up logs older than 30 days.
 type Logger struct {
 	enabled bool
 	file    *os.File

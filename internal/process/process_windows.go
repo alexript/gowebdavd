@@ -10,6 +10,9 @@ import (
 	"syscall"
 )
 
+// STILL_ACTIVE is the Windows constant indicating a process is still running
+const STILL_ACTIVE = 259
+
 // windowsManager implements Manager for Windows systems
 type windowsManager struct{}
 
@@ -31,7 +34,7 @@ func (w *windowsManager) IsRunning(pid int) bool {
 		return false
 	}
 
-	return exitCode == 259 // STILL_ACTIVE
+	return exitCode == STILL_ACTIVE
 }
 
 func (w *windowsManager) FindProcess(pid int) (Process, error) {
